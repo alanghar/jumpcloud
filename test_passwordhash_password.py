@@ -1,22 +1,16 @@
-import logging
-import pprint
-import os
-import subprocess
 import grequests
-import socket
 import datetime
 import json
-import random
+import requests
 from baseservertest import BaseServerTest
-
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger()
 
 MAX_JOBID_WAIT_SEC = 2
 HASH_WAIT_TIME_SEC = 5
 
 
-class TestPasswordHash_Password(BaseServerTest):       
+class TestPasswordHash_Password(BaseServerTest):
+    def setUp(self):
+        self.seed_random(0)      
 
     def test_empty_pw(self):
         self.verify_pw("")
@@ -81,9 +75,13 @@ class TestPasswordHash_Password(BaseServerTest):
         jobid = self.verify_pw("0123456789")
         self.verify_pw(jobid)
 
+    def test_malformed_json(self):
+        url = self.get_pw_url()
+        r = requests.post(url, data="not valid json")
+        assert r.status_code == 400, "Malformed json request did not return a 400 status"
+
     def test_concurrent_requests(self):
-        self.seed_random(0)
-        rand_pws = self.generate_n_random_passwords(50, 20)
+        rand_pws = self.generate_n_random_passwords(1000, 20)
         url = self.get_pw_url()
         async_requests = (grequests.post(url, data=json.dumps({"password": str(pw)})) for pw in rand_pws)
         async_results = [int(x.content) for x in grequests.map(async_requests)]

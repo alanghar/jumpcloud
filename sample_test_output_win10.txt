@@ -1,0 +1,185 @@
+C:\Users\Alex\Desktop\JumpCloud\shared\repo>pytest.exe
+============================= test session starts =============================
+platform win32 -- Python 2.7.14, pytest-3.4.0, py-1.5.2, pluggy-0.6.0
+rootdir: C:\Users\Alex\Desktop\JumpCloud\shared\repo, inifile:
+collected 38 items
+
+test_passwordhash_jobid.py ......                                        [ 15%]
+test_passwordhash_password.py ..F...F.F..............                    [ 76%]
+test_passwordhash_ports.py ..                                            [ 81%]
+test_passwordhash_shutdown.py F...                                       [ 92%]
+test_passwordhash_stats.py F.F                                           [100%]
+
+================================== FAILURES ===================================
+_____________ TestPasswordHash_Password.test_concurrent_requests ______________
+
+self = <repo.test_passwordhash_password.TestPasswordHash_Password testMethod=test_concurrent_requests>
+
+    def test_concurrent_requests(self):
+        rand_pws = self.generate_n_random_passwords(1000, 20)
+        url = self.get_pw_url()
+        async_requests = (grequests.post(url, data=json.dumps({"password": str(pw)})) for pw in rand_pws)
+        async_results = [int(x.content) for x in grequests.map(async_requests)]
+        in_out_pairs = sorted(zip(async_results, rand_pws))
+        for result, pw in in_out_pairs:
+>           self.verify_jobid(result, pw)
+
+test_passwordhash_password.py:90:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <repo.test_passwordhash_password.TestPasswordHash_Password testMethod=test_concurrent_requests>
+jobid = 5, expected_pw = '(\':KM*asFw(J}"ML.N+e'
+
+    def verify_jobid(self, jobid, expected_pw):
+        resp = self.try_jobid(jobid)
+        sha = hashlib.sha512(str(expected_pw)).digest()
+        b64 = base64.b64encode(sha)
+>       assert resp == b64, "The server returned an incorrect Base64 string for password '%s'" % expected_pw
+E       AssertionError: The server returned an incorrect Base64 string for password '(':KM*asFw(J}"ML.N+e'
+
+baseservertest.py:73: AssertionError
+_________________ TestPasswordHash_Password.test_hash_delayed _________________
+
+self = <repo.test_passwordhash_password.TestPasswordHash_Password testMethod=test_hash_delayed>
+
+    def test_hash_delayed(self):
+        jobid = self.try_pw("sample password")
+        jobid_returned_time = datetime.datetime.now()
+        resp = self.try_jobid(jobid)
+        hash_time = datetime.datetime.now()
+        if(hash_time - jobid_returned_time < datetime.timedelta(seconds=HASH_WAIT_TIME_SEC)):
+>           self.fail("Hashing occurred too quickly (should be greater than %s sec): %s" % (HASH_WAIT_TIME_SEC, hash_time - jobid_returned_time))
+E           AssertionError: Hashing occurred too quickly (should be greater than 5 sec): 0:00:00.004000
+
+test_passwordhash_password.py:106: AssertionError
+__________ TestPasswordHash_Password.test_jobid_returned_immediately __________
+
+self = <repo.test_passwordhash_password.TestPasswordHash_Password testMethod=test_jobid_returned_immediately>
+
+    def test_jobid_returned_immediately(self):
+        start = datetime.datetime.now()
+        self.try_pw("sample password")
+        end = datetime.datetime.now()
+        jobid_time = end - start
+        if(jobid_time > datetime.timedelta(seconds=MAX_JOBID_WAIT_SEC)):
+>           self.fail("Took too long to return the jobid (should be 'immediate'): %s" % jobid_time)
+E           AssertionError: Took too long to return the jobid (should be 'immediate'): 0:00:05.004000
+
+test_passwordhash_password.py:98: AssertionError
+_______________ TestPasswordHash_Shutdown.test_inflight_allowed _______________
+
+self = <repo.test_passwordhash_shutdown.TestPasswordHash_Shutdown testMethod=test_inflight_allowed>
+
+    def test_inflight_allowed(self):
+        """
+            This test attempts to issue the shutdown command after submitting
+            a number of passwords to the server. The specification says any in-flight requests
+            should continue processing until finished.
+
+            Here, a separate thread attempts the password submissions, and 4 seconds
+            after starting the thread, the shutdown command is given. This is technically a race
+            condition but I think unlikely to be a problem.
+            """
+        thread_results = {"error": None, "failed": False}
+        pwds = self.generate_n_random_passwords(50, 20)
+
+        def submitter_thread_routine(pwds, output):
+            def handle_exception(request, exception):
+                if(isinstance(exception.args[0], requests.packages.urllib3.exceptions.ProtocolError)):
+                    # We may want to control access to the output dict with a lock, but it's not critical here.
+                    output['error'] = exception
+                    output['failed'] = True
+
+            try:
+                url = self.get_pw_url()
+                async_requests = (grequests.post(url, data=json.dumps({"password": str(pw)})) for pw in pwds)
+                async_results = grequests.map(async_requests, exception_handler=handle_exception)
+                if(not all(map(lambda x:x is not None and x.status_code == 200, async_results))):
+                    output["failed"] = True
+            except Exception as e:
+                traceback.print_exc()
+                output['error'] = e
+                output["failed"] = True
+
+        thread = threading.Thread(target=submitter_thread_routine, args=(pwds, thread_results))
+        thread.start()
+        time.sleep(4)
+        self.try_shutdown()
+        thread.join()
+>       assert thread_results["failed"] == False, "Server mishandled in-flight requests while shutting down.: %s" % thread_results["error"]
+E       AssertionError: Server mishandled in-flight requests while shutting down.: ('Connection aborted.', error(10054, 'An existing connection was forcibly closed by the remote host'))
+E       assert True == False
+
+test_passwordhash_shutdown.py:55: AssertionError
+---------------------------- Captured stderr setup ----------------------------
+INFO:root:Spawned server process 26812
+----------------------------- Captured log setup ------------------------------
+helpers.py                  30 INFO     Spawned server process 26812
+---------------------------- Captured stderr call -----------------------------
+INFO:root:Killing server process 26812
+INFO:root:Spawned server process 8604
+2018/02/10 16:04:21 Shutdown signal recieved
+2018/02/10 16:04:22 Shutting down
+------------------------------ Captured log call ------------------------------
+helpers.py                  36 INFO     Killing server process 26812
+helpers.py                  30 INFO     Spawned server process 8604
+______________ TestPasswordHash_Stats.test_concurrent_increment _______________
+
+self = <repo.test_passwordhash_stats.TestPasswordHash_Stats testMethod=test_concurrent_increment>
+
+    def test_concurrent_increment(self):
+        initial_stats = self.get_stats()
+        rand_pws = self.generate_n_random_passwords(50, 20)
+        url = self.get_pw_url()
+        async_requests = (grequests.post(url, data=json.dumps({"password": str(pw)})) for pw in rand_pws)
+        start_time = datetime.datetime.now()
+        async_results = [int(x.content) for x in grequests.map(async_requests)]
+        end_time = datetime.datetime.now()
+        new_stats = self.get_stats()
+        assert new_stats['TotalRequests'] == initial_stats['TotalRequests'] + 50, "TotalRequests does not increment as expected"
+        assert new_stats['AverageTime'] >= HASH_WAIT_TIME_SEC * MILLIS, "Average hash time statistic failed to be greater than %s seconds" % HASH_WAIT_TIME_SEC
+>       assert new_stats['AverageTime'] <= (end_time - start_time).total_seconds() * MILLIS, "Average hash time statistic too high"
+E       AssertionError: Average hash time statistic too high
+E       assert 39980 <= (5.252 * 1000)
+E        +  where 5.252 = <built-in method total_seconds of datetime.timedelta object at 0x07011020>()
+E        +    where <built-in method total_seconds of datetime.timedelta object at 0x07011020> = (datetime.datetime(2018, 2, 10, 16, 4, 51, 637000) - datetime.datetime(2018, 2, 10, 16, 4, 46, 385000)).total_seconds
+
+test_passwordhash_stats.py:43: AssertionError
+---------------------------- Captured stderr setup ----------------------------
+INFO:root:Spawned server process 28848
+----------------------------- Captured log setup ------------------------------
+helpers.py                  30 INFO     Spawned server process 28848
+---------------------------- Captured stderr call -----------------------------
+INFO:root:Killing server process 28848
+INFO:root:Spawned server process 32092
+------------------------------ Captured log call ------------------------------
+helpers.py                  36 INFO     Killing server process 28848
+helpers.py                  30 INFO     Spawned server process 32092
+____________ TestPasswordHash_Stats.test_simple_request_increment _____________
+
+self = <repo.test_passwordhash_stats.TestPasswordHash_Stats testMethod=test_simple_request_increment>
+
+    def test_simple_request_increment(self):
+        initial_stats = self.get_stats()
+        pw = self.generate_random_password(20)
+        start_time = datetime.datetime.now()
+        self.try_pw(pw)
+        end_time = datetime.datetime.now()
+        new_stats = self.get_stats()
+        assert new_stats['TotalRequests'] == initial_stats['TotalRequests'] + 1, "TotalRequests does not increment as expected"
+>       assert new_stats['AverageTime'] >= HASH_WAIT_TIME_SEC * MILLIS, "Average hash time failed to be greater than %s seconds" % HASH_WAIT_TIME_SEC
+E       AssertionError: Average hash time failed to be greater than 5 seconds
+E       assert 0 >= (5 * 1000)
+
+test_passwordhash_stats.py:29: AssertionError
+---------------------------- Captured stderr call -----------------------------
+INFO:root:Killing server process 8604
+INFO:root:Spawned server process 6952
+------------------------------ Captured log call ------------------------------
+helpers.py                  36 INFO     Killing server process 8604
+helpers.py                  30 INFO     Spawned server process 6952
+-------------------------- Captured stderr teardown ---------------------------
+INFO:root:Killing server process 6952
+---------------------------- Captured log teardown ----------------------------
+helpers.py                  36 INFO     Killing server process 6952
+==================== 6 failed, 32 passed in 203.21 seconds ====================

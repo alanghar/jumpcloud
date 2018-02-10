@@ -1,16 +1,11 @@
-from unittest import TestCase
 import logging
 import os
 import time
 import subprocess
-import requests
 import socket
-import json
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger()
-
-PORT = '8088'
 
 server_process = None
 
@@ -22,29 +17,34 @@ server_process = None
 #
 ###################################################
 
-def start_server():  
+def start_server(port):  
     global server_process      
-    if(is_listening('localhost', PORT)):
-        raise Exception("Port %s is occupied" % PORT)
+    if(is_listening('localhost', port)):
+        raise Exception("Port %s is occupied" % port)
 
     env = os.environ.copy()
-    env['PORT'] = PORT
+    env['PORT'] = port
     server_exe = {'posix': 'broken-hashserve_linux',
                   'nt': 'broken-hashserve_win.exe'}[os.name]
     server_process = subprocess.Popen(['../server/%s' % server_exe], env=env)
     logger.info("Spawned server process %s" % server_process.pid)
+    time.sleep(0.5)  # Sometimes the server needs some time to initialize and open the port
 
 def stop_server():    
     global server_process      
-    if(server_process):
+    if(server_process and server_process.poll() is None):
         logger.info("Killing server process %s" % server_process.pid)
-        server_process.kill()
+        try:
+            server_process.kill()
+        except:
+            pass
+        server_process.wait()
         server_process = None
 
-def restart_server():
+def restart_server(port):
     stop_server()
     time.sleep(1)  # I had some issues with the port not being release soon enough
-    start_server()
+    start_server(port)
 
 def is_listening(host, port):
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

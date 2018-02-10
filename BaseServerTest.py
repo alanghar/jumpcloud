@@ -1,36 +1,23 @@
 from unittest import TestCase
-import logging
-import os
-import subprocess
 import requests
-import socket
 import json
 import base64
 import random
 import hashlib
-import datetime
 import string
 from helpers import start_server, stop_server
-
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger()
 
 PORT = '8088'
 BASEURL = r'http://localhost:%s' % PORT
 
-PASSWORD = r"some random password 0123456789 ~!@#$%^&*()_[]{}?/.,<>;':"
-SHA512HASH = hashlib.sha512(PASSWORD).digest()
-B64ENCODED = base64.b64encode(SHA512HASH)
 
 class BaseServerTest(TestCase):
     @classmethod
     def setUpClass(cls):
-        logger.info("setUpClass() called")
-        start_server()
+        start_server(PORT)
 
     @classmethod
     def tearDownClass(cls):
-        logger.info("tearDownClass() called")
         stop_server()
 
     def get_jobid_url(self, jobid):
@@ -42,11 +29,14 @@ class BaseServerTest(TestCase):
     def get_stats_url(self):
         return '/'.join([BASEURL, 'stats'])
 
+    def get_shutdown_url(self):
+        return self.get_pw_url()
+
     def try_pw(self, pw):
         url = self.get_pw_url()
         payload = json.dumps({"password": str(pw)})
         r = requests.post(url, data=payload)
-        self.assertEqual(r.status_code, 200)
+        assert r.status_code == 200, "Password submission returned a non-200 status"
         try:
             return int(r.content)
         except:
@@ -55,15 +45,22 @@ class BaseServerTest(TestCase):
     def try_jobid(self, jobid):
         url = self.get_jobid_url(jobid)
         r = requests.get(url)
-        self.assertEqual(r.status_code, 200)
-        self.assertNotEqual(r.content.strip(), "")
+        assert r.status_code == 200, "Job ID request returned a non-200 status"
+        assert r.content.strip() != "", "Job ID request returned nothing"
         return r.content
+
+    def try_shutdown(self):
+        url = self.get_shutdown_url()
+        payload = "shutdown"
+        r = requests.post(url, data=payload)
+        assert r.status_code == 200, "Shutdown request returned a non-200 status"
+        assert r.content == "", "Shutdown request returned data (should be blank)"
 
     def get_stats(self):
         url = self.get_stats_url()
         r = requests.get(url)
-        self.assertEqual(r.status_code, 200)
-        self.assertNotEqual(r.content.strip(), "")
+        assert r.status_code == 200, "Stats request returned a non-200 status"
+        assert r.content.strip() != "", "Status request returned nothing"
         try:
             return json.loads(r.content)
         except:
@@ -73,12 +70,12 @@ class BaseServerTest(TestCase):
         resp = self.try_jobid(jobid)
         sha = hashlib.sha512(str(expected_pw)).digest()
         b64 = base64.b64encode(sha)
-        self.assertEquals(resp, b64)
+        assert resp == b64, "The server returned an incorrect Base64 string for password '%s'" % expected_pw
         return resp
 
     def verify_pw(self, pw):
         jobid = self.try_pw(pw)    
-        return verify_jobid(jobid, pw)
+        return self.verify_jobid(jobid, pw)
 
     def seed_random(self, seed):
         random.seed(a=seed)
