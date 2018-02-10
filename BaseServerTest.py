@@ -26,18 +26,21 @@ class BaseServerTest(TestCase):
     @classmethod
     def setUpClass(cls):
         logger.info("setUpClass() called")
-        start_server(cls)
+        start_server()
 
     @classmethod
     def tearDownClass(cls):
         logger.info("tearDownClass() called")
-        stop_server(cls)
+        stop_server()
 
     def get_jobid_url(self, jobid):
         return '/'.join([BASEURL, 'hash', str(jobid)])
 
     def get_pw_url(self):
         return '/'.join([BASEURL, 'hash'])
+
+    def get_stats_url(self):
+        return '/'.join([BASEURL, 'stats'])
 
     def try_pw(self, pw):
         url = self.get_pw_url()
@@ -55,6 +58,16 @@ class BaseServerTest(TestCase):
         self.assertEqual(r.status_code, 200)
         self.assertNotEqual(r.content.strip(), "")
         return r.content
+
+    def get_stats(self):
+        url = self.get_stats_url()
+        r = requests.get(url)
+        self.assertEqual(r.status_code, 200)
+        self.assertNotEqual(r.content.strip(), "")
+        try:
+            return json.loads(r.content)
+        except:
+            self.fail("Invalid JSON result")
 
     def verify_jobid(self, jobid, expected_pw):
         resp = self.try_jobid(jobid)

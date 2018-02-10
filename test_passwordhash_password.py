@@ -82,9 +82,6 @@ class TestPasswordHash_Password(BaseServerTest):
         self.verify_pw(jobid)
 
     def test_concurrent_requests(self):
-        """
-        Do the stats update at the right time?
-        """
         self.seed_random(0)
         rand_pws = self.generate_n_random_passwords(50, 20)
         url = self.get_pw_url()
