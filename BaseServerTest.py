@@ -36,8 +36,11 @@ class BaseServerTest(TestCase):
     def get_jobid_url(self, jobid):
         return '/'.join([BASEURL, 'hash', str(jobid)])
 
+    def get_pw_url(self):
+        return '/'.join([BASEURL, 'hash'])
+
     def try_pw(self, pw):
-        url = '/'.join([BASEURL, 'hash'])
+        url = self.get_pw_url()
         payload = json.dumps({"password": str(pw)})
         r = requests.post(url, data=payload)
         self.assertEqual(r.status_code, 200)
@@ -53,12 +56,16 @@ class BaseServerTest(TestCase):
         self.assertNotEqual(r.content.strip(), "")
         return r.content
 
-    def verify_pw(self, pw):
-        jobid = self.try_pw(pw)    
+    def verify_jobid(self, jobid, expected_pw):
         resp = self.try_jobid(jobid)
-        sha = hashlib.sha512(str(pw)).digest()
+        sha = hashlib.sha512(str(expected_pw)).digest()
         b64 = base64.b64encode(sha)
         self.assertEquals(resp, b64)
+        return resp
+
+    def verify_pw(self, pw):
+        jobid = self.try_pw(pw)    
+        return verify_jobid(jobid, pw)
 
     def seed_random(self, seed):
         random.seed(a=seed)

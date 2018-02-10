@@ -1,10 +1,12 @@
 import logging
+import pprint
 import os
 import subprocess
-import requests
+import grequests
 import socket
 import datetime
 import json
+import random
 from baseservertest import BaseServerTest
 
 logging.basicConfig(level=logging.INFO)
@@ -79,14 +81,18 @@ class TestPasswordHash_Password(BaseServerTest):
         jobid = self.verify_pw("0123456789")
         self.verify_pw(jobid)
 
-    # def test_concurrent_requests(self):
-    #     """
-    #     Do the stats update at the right time?
-    #     """
-    #     self.seed_random(0)
-    #     rand_pws = self.generate_n_random_passwords(50, 20)
-    #     for pw in rand_pws:
-            
+    def test_concurrent_requests(self):
+        """
+        Do the stats update at the right time?
+        """
+        self.seed_random(0)
+        rand_pws = self.generate_n_random_passwords(50, 20)
+        url = self.get_pw_url()
+        async_requests = (grequests.post(url, data=json.dumps({"password": str(pw)})) for pw in rand_pws)
+        async_results = [int(x.content) for x in grequests.map(async_requests)]
+        in_out_pairs = sorted(zip(async_results, rand_pws))
+        for result, pw in in_out_pairs:
+            self.verify_jobid(result, pw)
 
     def test_jobid_returned_immediately(self): 
         start = datetime.datetime.now()       
