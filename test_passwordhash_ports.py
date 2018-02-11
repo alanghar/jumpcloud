@@ -1,11 +1,10 @@
 import socket
-from helpers import is_listening
 from baseservertest import BaseServerTest, PORT
 
 
 class TestPasswordHash_Ports(BaseServerTest):
     def test_listening_port(self):
-        if(not is_listening('localhost', PORT)):
+        if(not self.is_listening('localhost', PORT)):
             self.fail("Server is not listening on port %s" % PORT)
 
     def test_multiple_connections(self):

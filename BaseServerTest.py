@@ -1,24 +1,33 @@
 from unittest import TestCase
-import requests
-import json
 import base64
-import random
 import hashlib
+import json
+import logging
+import os
+import random
+import requests
+import socket
 import string
-from helpers import start_server, stop_server
+import subprocess
+import time
+import datetime
+import psutil
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger()
 
 PORT = '8088'
 BASEURL = r'http://localhost:%s' % PORT
 
 
 class BaseServerTest(TestCase):
-    @classmethod
-    def setUpClass(cls):
-        start_server(PORT)
+    def setUp(self):
+        self.server_process = None
+        self.restart_server(PORT)
+        self.seed_random(0)
 
-    @classmethod
-    def tearDownClass(cls):
-        stop_server()
+    def tearDown(self):
+        self.stop_server()
 
     def get_jobid_url(self, jobid):
         return '/'.join([BASEURL, 'hash', str(jobid)])
@@ -85,3 +94,51 @@ class BaseServerTest(TestCase):
 
     def generate_n_random_passwords(self, n, length):
         return [self.generate_random_password(length) for x in xrange(n)]
+
+    def verify_server_terminated(self):
+        """
+        Verifies that the server process terminated.
+        """
+        if(self.server_process):
+            start_time = datetime.datetime.now()
+            while(datetime.datetime.now() - start_time < datetime.timedelta(seconds=5)):
+                if(psutil.pid_exists(self.server_process.pid) is False):
+                    break
+                time.sleep(0.1)
+            assert psutil.pid_exists(self.server_process.pid) == False, "Server process still exists 5 seconds after shutdown."
+
+    def start_server(self, port):
+        if(self.is_listening('localhost', port)):
+            raise Exception("Port %s is occupied" % port)
+
+        env = os.environ.copy()
+        env['PORT'] = port
+        server_exe = {'posix': 'broken-hashserve_linux',
+                      'nt': 'broken-hashserve_win.exe'}[os.name]
+        self.server_process = subprocess.Popen(['../server/%s' % server_exe], env=env)
+        logger.info("Spawned server process %s" % self.server_process.pid)
+        time.sleep(0.5)  # Sometimes the server needs some time to initialize and open the port
+
+    def stop_server(self):
+        if(self.server_process and self.server_process.poll() is None):
+            logger.info("Killing server process %s" % self.server_process.pid)
+            try:
+                self.server_process.kill()
+            except:
+                pass
+            self.server_process.wait()
+            self.server_process = None
+
+    def restart_server(self, port):
+        self.stop_server()
+        time.sleep(1)  # I had some issues with the port not being release soon enough
+        self.start_server(port)
+
+    def is_listening(self, host, port):
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        try:
+            s.connect((str(host), int(port)))
+            s.shutdown(2)
+            return True
+        except:
+            return False

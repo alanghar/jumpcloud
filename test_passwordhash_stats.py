@@ -4,15 +4,10 @@ import pprint
 import datetime
 from baseservertest import BaseServerTest, PORT
 from test_passwordhash_password import HASH_WAIT_TIME_SEC
-from helpers import restart_server
 
 MILLIS = 1000
 
 class TestPasswordHash_Stats(BaseServerTest):
-    def setUp(self):
-        restart_server(PORT)
-        self.seed_random(0)
-
     def test_initial_stats(self):
         stats = self.get_stats()
         assert stats['AverageTime'] == 0, "AverageTime not initialized correctly"

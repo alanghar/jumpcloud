@@ -4,17 +4,25 @@ import json
 import time
 import traceback
 import threading
-from helpers import restart_server
 from baseservertest import BaseServerTest, PORT
 
 
 class TestPasswordHash_Shutdown(BaseServerTest):
-    def setUp(self):
-        restart_server(PORT)
-        self.seed_random(0)
+    # def setUp(self):
+    #     restart_server(PORT)
+    #     self.seed_random(0)
 
-    def test_shutdown_request(self):
+    def test_shutdown_request_fresh(self):
         self.try_shutdown()
+        self.verify_server_terminated()
+
+    def test_shutdown_request_used(self):
+        """
+        Shutdown a server that has already processed at least one request.
+        """
+        self.verify_pw(self.generate_random_password(20))
+        self.try_shutdown()
+        self.verify_server_terminated()
 
     def test_inflight_allowed(self):
         """
@@ -29,23 +37,27 @@ class TestPasswordHash_Shutdown(BaseServerTest):
         thread_results = {"error": None, "failed": False}
         pwds = self.generate_n_random_passwords(50, 20)
 
+        lock = threading.Lock()
+
         def submitter_thread_routine(pwds, output):
             def handle_exception(request, exception):
                 if(isinstance(exception.args[0], requests.packages.urllib3.exceptions.ProtocolError)):
-                    # We may want to control access to the output dict with a lock, but it's not critical here.
-                    output['error'] = exception
-                    output['failed'] = True
+                    with lock:
+                        output['error'] = exception
+                        output['failed'] = True
 
             try:
                 url = self.get_pw_url()
                 async_requests = (grequests.post(url, data=json.dumps({"password": str(pw)})) for pw in pwds)
                 async_results = grequests.map(async_requests, exception_handler=handle_exception)
                 if(not all(map(lambda x:x is not None and x.status_code == 200, async_results))):
-                    output["failed"] = True
+                    with lock:
+                        output["failed"] = True
             except Exception as e:
                 traceback.print_exc()
-                output['error'] = e
-                output["failed"] = True
+                with lock:
+                    output['error'] = e
+                    output["failed"] = True
 
         thread = threading.Thread(target=submitter_thread_routine, args=(pwds, thread_results))
         thread.start()
@@ -53,11 +65,13 @@ class TestPasswordHash_Shutdown(BaseServerTest):
         self.try_shutdown()
         thread.join()
         assert thread_results["failed"] == False, "Server mishandled in-flight requests while shutting down.: %s" % thread_results["error"]
+        self.verify_server_terminated()
 
 
     def test_new_requests_denied(self):
         self.try_pw("sample password")
         self.try_shutdown()
+        self.verify_server_terminated()
         try:
             self.try_pw("sample password")
         except:
@@ -75,6 +89,7 @@ class TestPasswordHash_Shutdown(BaseServerTest):
         thread.start()
         time.sleep(2)
         self.try_shutdown()
+        self.verify_server_terminated()
         was_rejected = False
         try:
             self.try_pw("sample password")
