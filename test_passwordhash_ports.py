@@ -3,7 +3,7 @@ from helpers import is_listening
 from baseservertest import BaseServerTest, PORT
 
 
-class TestPasswordHash_Ports(BaseServerTest):        
+class TestPasswordHash_Ports(BaseServerTest):
     def test_listening_port(self):
         if(not is_listening('localhost', PORT)):
             self.fail("Server is not listening on port %s" % PORT)

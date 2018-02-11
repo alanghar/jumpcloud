@@ -29,7 +29,7 @@ class TestPasswordHash_Stats(BaseServerTest):
         assert new_stats['AverageTime'] >= HASH_WAIT_TIME_SEC * MILLIS, "Average hash time failed to be greater than %s seconds" % HASH_WAIT_TIME_SEC
         assert new_stats['AverageTime'] <= (end_time - start_time).total_seconds() * MILLIS, "Average hash time statistic too high"
 
-    def test_concurrent_increment(self):        
+    def test_concurrent_increment(self):
         initial_stats = self.get_stats()
         rand_pws = self.generate_n_random_passwords(50, 20)
         url = self.get_pw_url()
@@ -41,4 +41,3 @@ class TestPasswordHash_Stats(BaseServerTest):
         assert new_stats['TotalRequests'] == initial_stats['TotalRequests'] + 50, "TotalRequests does not increment as expected"
         assert new_stats['AverageTime'] >= HASH_WAIT_TIME_SEC * MILLIS, "Average hash time statistic failed to be greater than %s seconds" % HASH_WAIT_TIME_SEC
         assert new_stats['AverageTime'] <= (end_time - start_time).total_seconds() * MILLIS, "Average hash time statistic too high"
-        

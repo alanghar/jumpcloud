@@ -10,7 +10,7 @@ HASH_WAIT_TIME_SEC = 5
 
 class TestPasswordHash_Password(BaseServerTest):
     def setUp(self):
-        self.seed_random(0)      
+        self.seed_random(0)
 
     def test_empty_pw(self):
         self.verify_pw("")
@@ -89,19 +89,18 @@ class TestPasswordHash_Password(BaseServerTest):
         for result, pw in in_out_pairs:
             self.verify_jobid(result, pw)
 
-    def test_jobid_returned_immediately(self): 
-        start = datetime.datetime.now()       
-        self.try_pw("sample password")    
-        end = datetime.datetime.now()    
+    def test_jobid_returned_immediately(self):
+        start = datetime.datetime.now()
+        self.try_pw("sample password")
+        end = datetime.datetime.now()
         jobid_time = end - start
         if(jobid_time > datetime.timedelta(seconds=MAX_JOBID_WAIT_SEC)):
             self.fail("Took too long to return the jobid (should be 'immediate'): %s" % jobid_time)
 
-    def test_hash_delayed(self):        
-        jobid = self.try_pw("sample password")    
-        jobid_returned_time = datetime.datetime.now()    
+    def test_hash_delayed(self):
+        jobid = self.try_pw("sample password")
+        jobid_returned_time = datetime.datetime.now()
         resp = self.try_jobid(jobid)
         hash_time = datetime.datetime.now()
         if(hash_time - jobid_returned_time < datetime.timedelta(seconds=HASH_WAIT_TIME_SEC)):
             self.fail("Hashing occurred too quickly (should be greater than %s sec): %s" % (HASH_WAIT_TIME_SEC, hash_time - jobid_returned_time))
-

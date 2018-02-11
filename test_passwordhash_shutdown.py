@@ -23,7 +23,7 @@ class TestPasswordHash_Shutdown(BaseServerTest):
         should continue processing until finished.
 
         Here, a separate thread attempts the password submissions, and 4 seconds
-        after starting the thread, the shutdown command is given. This is technically a race 
+        after starting the thread, the shutdown command is given. This is technically a race
         condition but I think unlikely to be a problem.
         """
         thread_results = {"error": None, "failed": False}
@@ -53,7 +53,7 @@ class TestPasswordHash_Shutdown(BaseServerTest):
         self.try_shutdown()
         thread.join()
         assert thread_results["failed"] == False, "Server mishandled in-flight requests while shutting down.: %s" % thread_results["error"]
-        
+
 
     def test_new_requests_denied(self):
         self.try_pw("sample password")

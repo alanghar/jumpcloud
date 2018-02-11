@@ -40,7 +40,7 @@ class BaseServerTest(TestCase):
         try:
             return int(r.content)
         except:
-            self.fail("Response is not numeric") 
+            self.fail("Response is not numeric")
 
     def try_jobid(self, jobid):
         url = self.get_jobid_url(jobid)
@@ -74,7 +74,7 @@ class BaseServerTest(TestCase):
         return resp
 
     def verify_pw(self, pw):
-        jobid = self.try_pw(pw)    
+        jobid = self.try_pw(pw)
         return self.verify_jobid(jobid, pw)
 
     def seed_random(self, seed):

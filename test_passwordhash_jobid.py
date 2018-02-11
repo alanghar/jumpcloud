@@ -32,3 +32,9 @@ class TestPasswordHash_JobID(BaseServerTest):
         url = self.get_jobid_url(" ")
         r = requests.get(url)
         assert r.status_code == 400
+
+    def test_reused_jobid(self):
+        pw = "some password"
+        jobid = self.try_pw(pw)
+        for x in xrange(100):
+            self.verify_jobid(jobid, pw)

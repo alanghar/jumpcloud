@@ -13,12 +13,12 @@ server_process = None
 #
 #
 #                Helper Functions
-#       
+#
 #
 ###################################################
 
-def start_server(port):  
-    global server_process      
+def start_server(port):
+    global server_process
     if(is_listening('localhost', port)):
         raise Exception("Port %s is occupied" % port)
 
@@ -30,8 +30,8 @@ def start_server(port):
     logger.info("Spawned server process %s" % server_process.pid)
     time.sleep(0.5)  # Sometimes the server needs some time to initialize and open the port
 
-def stop_server():    
-    global server_process      
+def stop_server():
+    global server_process
     if(server_process and server_process.poll() is None):
         logger.info("Killing server process %s" % server_process.pid)
         try:
