@@ -2,12 +2,12 @@ C:\Users\Alex\Desktop\JumpCloud\shared\repo>pytest
 ============================= test session starts =============================
 platform win32 -- Python 2.7.14, pytest-3.4.0, py-1.5.2, pluggy-0.6.0
 rootdir: C:\Users\Alex\Desktop\JumpCloud\shared\repo, inifile:
-collected 40 items
+collected 39 items
 
 test_passwordhash_jobid.py .......                                       [ 17%]
-test_passwordhash_password.py ..F...F.F..............                    [ 75%]
-test_passwordhash_ports.py ..                                            [ 80%]
-test_passwordhash_shutdown.py F....                                      [ 92%]
+test_passwordhash_password.py ..F...F.F..............                    [ 76%]
+test_passwordhash_ports.py ..                                            [ 82%]
+test_passwordhash_shutdown.py FF..                                       [ 92%]
 test_passwordhash_stats.py F.F                                           [100%]
 
 ================================== FAILURES ===================================
@@ -24,26 +24,26 @@ self = <repo.test_passwordhash_password.TestPasswordHash_Password testMethod=tes
         for result, pw in in_out_pairs:
 >           self.verify_jobid(result, pw)
 
-test_passwordhash_password.py:90:
+test_passwordhash_password.py:87:
 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 
 self = <repo.test_passwordhash_password.TestPasswordHash_Password testMethod=test_concurrent_requests>
-jobid = 5, expected_pw = '(`w;lu[F]jn.e"1Y,c(%'
+jobid = 1, expected_pw = 'PyoXT!>~UDR]}]r9(h;8'
 
     def verify_jobid(self, jobid, expected_pw):
         resp = self.try_jobid(jobid)
         sha = hashlib.sha512(str(expected_pw)).digest()
         b64 = base64.b64encode(sha)
 >       assert resp == b64, "The server returned an incorrect Base64 string for password '%s'" % expected_pw
-E       AssertionError: The server returned an incorrect Base64 string for password '(`w;lu[F]jn.e"1Y,c(%'
+E       AssertionError: The server returned an incorrect Base64 string for password 'PyoXT!>~UDR]}]r9(h;8'
 
 baseservertest.py:82: AssertionError
 ---------------------------- Captured stderr call -----------------------------
-INFO:root:Spawned server process 1784
-INFO:root:Killing server process 1784
+INFO:root:Spawned server process 13092
+INFO:root:Killing server process 13092
 ------------------------------ Captured log call ------------------------------
-baseservertest.py          119 INFO     Spawned server process 1784
-baseservertest.py          124 INFO     Killing server process 1784
+baseservertest.py          119 INFO     Spawned server process 13092
+baseservertest.py          124 INFO     Killing server process 13092
 _________________ TestPasswordHash_Password.test_hash_delayed _________________
 
 self = <repo.test_passwordhash_password.TestPasswordHash_Password testMethod=test_hash_delayed>
@@ -57,13 +57,13 @@ self = <repo.test_passwordhash_password.TestPasswordHash_Password testMethod=tes
 >           self.fail("Hashing occurred too quickly (should be greater than %s sec): %s" % (HASH_WAIT_TIME_SEC, hash_time - jobid_returned_time))
 E           AssertionError: Hashing occurred too quickly (should be greater than 5 sec): 0:00:00.004000
 
-test_passwordhash_password.py:106: AssertionError
+test_passwordhash_password.py:103: AssertionError
 ---------------------------- Captured stderr call -----------------------------
-INFO:root:Spawned server process 4592
-INFO:root:Killing server process 4592
+INFO:root:Spawned server process 9204
+INFO:root:Killing server process 9204
 ------------------------------ Captured log call ------------------------------
-baseservertest.py          119 INFO     Spawned server process 4592
-baseservertest.py          124 INFO     Killing server process 4592
+baseservertest.py          119 INFO     Spawned server process 9204
+baseservertest.py          124 INFO     Killing server process 9204
 __________ TestPasswordHash_Password.test_jobid_returned_immediately __________
 
 self = <repo.test_passwordhash_password.TestPasswordHash_Password testMethod=test_jobid_returned_immediately>
@@ -75,15 +75,15 @@ self = <repo.test_passwordhash_password.TestPasswordHash_Password testMethod=tes
         jobid_time = end - start
         if(jobid_time > datetime.timedelta(seconds=MAX_JOBID_WAIT_SEC)):
 >           self.fail("Took too long to return the jobid (should be 'immediate'): %s" % jobid_time)
-E           AssertionError: Took too long to return the jobid (should be 'immediate'): 0:00:05.004000
+E           AssertionError: Took too long to return the jobid (should be 'immediate'): 0:00:05.005000
 
-test_passwordhash_password.py:98: AssertionError
+test_passwordhash_password.py:95: AssertionError
 ---------------------------- Captured stderr call -----------------------------
-INFO:root:Spawned server process 12116
-INFO:root:Killing server process 12116
+INFO:root:Spawned server process 9904
+INFO:root:Killing server process 9904
 ------------------------------ Captured log call ------------------------------
-baseservertest.py          119 INFO     Spawned server process 12116
-baseservertest.py          124 INFO     Killing server process 12116
+baseservertest.py          119 INFO     Spawned server process 9904
+baseservertest.py          124 INFO     Killing server process 9904
 _______________ TestPasswordHash_Shutdown.test_inflight_allowed _______________
 
 self = <repo.test_passwordhash_shutdown.TestPasswordHash_Shutdown testMethod=test_inflight_allowed>
@@ -132,13 +132,70 @@ self = <repo.test_passwordhash_shutdown.TestPasswordHash_Shutdown testMethod=tes
 E       AssertionError: Server mishandled in-flight requests while shutting down.: ('Connection aborted.', error(10054, 'An existing connection was forcibly closed by the remote host'))
 E       assert True == False
 
-test_passwordhash_shutdown.py:67: AssertionError
+test_passwordhash_shutdown.py:63: AssertionError
 ---------------------------- Captured stderr call -----------------------------
-INFO:root:Spawned server process 11280
-2018/02/11 11:35:52 Shutdown signal recieved
-2018/02/11 11:35:53 Shutting down
+INFO:root:Spawned server process 7012
+2018/02/12 00:37:24 Shutdown signal recieved
+2018/02/12 00:37:26 Shutting down
 ------------------------------ Captured log call ------------------------------
-baseservertest.py          119 INFO     Spawned server process 11280
+baseservertest.py          119 INFO     Spawned server process 7012
+_____________ TestPasswordHash_Shutdown.test_new_requests_denied ______________
+
+self = <repo.test_passwordhash_shutdown.TestPasswordHash_Shutdown testMethod=test_new_requests_denied>
+
+    def test_new_requests_denied(self):
+        """
+            Attempts to submit multiple new passwords after issuing a shutdown command WHILE a request
+            is already in flight. Verifies that the new requests are rejected.
+            """
+        def submitter_thread_routine(pw, output):
+            # Submit password BEFORE server is signaled to shut down
+            try:
+                self.try_pw(pw)
+                output["success"] = True
+            except:
+                # Don't fail the test if this fails.
+                # This test is only interested in whether or not new requests are rejected AFTER the shutdown request
+                pass
+
+        initial_submit_result = {"success": False}
+        thread = threading.Thread(target=submitter_thread_routine, args=(self.generate_random_password(20), initial_submit_result))
+        thread.start()
+
+        time.sleep(1)  # Give the thread some time to start its request
+
+        self.try_shutdown()
+
+        # By this point, a shutdown command has been issued, hopefully while a password request was already in flight.
+        # We attempt to submit more requests and expect them to be rejected. If they are accepted, it's a failure.
+        # In the event of a failure, we retroactively check that the initial request was successfully submitted.
+        # If it was, we raise a real failure. If not, the test result is inconclusive.
+
+        failed = False
+        for pw in self.generate_n_random_passwords(5, 20):
+            try:
+                self.try_pw(pw)
+                failed = True
+                break
+            except:
+                pass
+
+        thread.join()
+
+        if(initial_submit_result["success"] and failed):
+>           self.fail("Password request was accepted after shutdown")
+E           AssertionError: Password request was accepted after shutdown
+
+test_passwordhash_shutdown.py:107: AssertionError
+---------------------------- Captured stderr call -----------------------------
+INFO:root:Spawned server process 15456
+2018/02/12 00:37:29 Shutdown signal recieved
+2018/02/12 00:37:29 recieved request after shutdown
+2018/02/12 00:37:34 Shutting down
+INFO:root:Killing server process 15456
+------------------------------ Captured log call ------------------------------
+baseservertest.py          119 INFO     Spawned server process 15456
+baseservertest.py          124 INFO     Killing server process 15456
 ______________ TestPasswordHash_Stats.test_concurrent_increment _______________
 
 self = <repo.test_passwordhash_stats.TestPasswordHash_Stats testMethod=test_concurrent_increment>
@@ -156,17 +213,17 @@ self = <repo.test_passwordhash_stats.TestPasswordHash_Stats testMethod=test_conc
         assert new_stats['AverageTime'] >= HASH_WAIT_TIME_SEC * MILLIS, "Average hash time statistic failed to be greater than %s seconds" % HASH_WAIT_TIME_SEC
 >       assert new_stats['AverageTime'] <= (end_time - start_time).total_seconds() * MILLIS, "Average hash time statistic too high"
 E       AssertionError: Average hash time statistic too high
-E       assert 39916 <= (5.15 * 1000)
-E        +  where 5.15 = <built-in method total_seconds of datetime.timedelta object at 0x06D15BF0>()
-E        +    where <built-in method total_seconds of datetime.timedelta object at 0x06D15BF0> = (datetime.datetime(2018, 2, 11, 11, 36, 30, 461000) - datetime.datetime(2018, 2, 11, 11, 36, 25, 311000)).total_seconds
+E       assert 20004 <= (5.15 * 1000)
+E        +  where 5.15 = <built-in method total_seconds of datetime.timedelta object at 0x077076B0>()
+E        +    where <built-in method total_seconds of datetime.timedelta object at 0x077076B0> = (datetime.datetime(2018, 2, 12, 0, 37, 52, 564000) - datetime.datetime(2018, 2, 12, 0, 37, 47, 414000)).total_seconds
 
 test_passwordhash_stats.py:38: AssertionError
 ---------------------------- Captured stderr call -----------------------------
-INFO:root:Spawned server process 2844
-INFO:root:Killing server process 2844
+INFO:root:Spawned server process 8316
+INFO:root:Killing server process 8316
 ------------------------------ Captured log call ------------------------------
-baseservertest.py          119 INFO     Spawned server process 2844
-baseservertest.py          124 INFO     Killing server process 2844
+baseservertest.py          119 INFO     Spawned server process 8316
+baseservertest.py          124 INFO     Killing server process 8316
 ____________ TestPasswordHash_Stats.test_simple_request_increment _____________
 
 self = <repo.test_passwordhash_stats.TestPasswordHash_Stats testMethod=test_simple_request_increment>
@@ -185,9 +242,9 @@ E       assert 0 >= (5 * 1000)
 
 test_passwordhash_stats.py:24: AssertionError
 ---------------------------- Captured stderr call -----------------------------
-INFO:root:Spawned server process 800
-INFO:root:Killing server process 800
+INFO:root:Spawned server process 9920
+INFO:root:Killing server process 9920
 ------------------------------ Captured log call ------------------------------
-baseservertest.py          119 INFO     Spawned server process 800
-baseservertest.py          124 INFO     Killing server process 800
-==================== 6 failed, 34 passed in 292.03 seconds ====================
+baseservertest.py          119 INFO     Spawned server process 9920
+baseservertest.py          124 INFO     Killing server process 9920
+==================== 7 failed, 32 passed in 281.34 seconds ====================

@@ -65,33 +65,45 @@ class TestPasswordHash_Shutdown(BaseServerTest):
 
 
     def test_new_requests_denied(self):
-        self.try_pw("sample password")
-        self.try_shutdown()
-        self.verify_server_terminated()
-        try:
-            self.try_pw("sample password")
-        except:
-            return
-        self.fail("Password request was accepted after shutdown")
+        """
+        Attempts to submit multiple new passwords after issuing a shutdown command WHILE a request
+        is already in flight. Verifies that the new requests are rejected.
+        """
+        def submitter_thread_routine(pw, output):
+            # Submit password BEFORE server is signaled to shut down
+            try:
+                self.try_pw(pw)
+                output["success"] = True
+            except:
+                # Don't fail the test if this fails.
+                # This test is only interested in whether or not new requests are rejected AFTER the shutdown request
+                pass
 
-
-    def test_new_concurrent_requests_denied(self):
-        thread_results = {"complete": False}
-        def submitter_thread_routine(thread_results):
-            self.try_pw("sample password")
-            thread_results["complete"] = True
-
-        thread = threading.Thread(target=submitter_thread_routine, args=(thread_results,))
+        initial_submit_result = {"success": False}
+        thread = threading.Thread(target=submitter_thread_routine, args=(self.generate_random_password(20), initial_submit_result))
         thread.start()
-        time.sleep(2)
+
+        time.sleep(1)  # Give the thread some time to start its request
+
         self.try_shutdown()
-        self.verify_server_terminated()
-        was_rejected = False
-        try:
-            self.try_pw("sample password")
-        except:
-            was_rejected = True
+
+        # By this point, a shutdown command has been issued, hopefully while a password request was already in flight.
+        # We attempt to submit more requests and expect them to be rejected. If they are accepted, it's a failure.
+        # In the event of a failure, we retroactively check that the initial request was successfully submitted.
+        # If it was, we raise a real failure. If not, the test result is inconclusive.
+
+        failed = False
+        for pw in self.generate_n_random_passwords(5, 20):
+            try:
+                self.try_pw(pw)
+                failed = True
+                break
+            except:
+                pass
+
         thread.join()
 
-        if(was_rejected is False):
+        if(initial_submit_result["success"] and failed):
             self.fail("Password request was accepted after shutdown")
+
+        self.verify_server_terminated()
