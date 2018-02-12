@@ -103,7 +103,9 @@ class TestPasswordHash_Shutdown(BaseServerTest):
 
         thread.join()
 
-        if(initial_submit_result["success"] and failed):
-            self.fail("Password request was accepted after shutdown")
+        if(initial_submit_result["success"] is False):
+            self.fail("Inconclusive result. Server shut down before initial request was made.")
+        elif(failed):
+            self.fail("Password request was accepted after shutdown signal. It should have been rejected.")
 
         self.verify_server_terminated()
