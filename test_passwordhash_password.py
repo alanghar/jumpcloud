@@ -9,9 +9,6 @@ HASH_WAIT_TIME_SEC = 5
 
 
 class TestPasswordHash_Password(BaseServerTest):
-    # def setUp(self):
-    #     self.seed_random(0)
-
     def test_empty_pw(self):
         self.verify_pw("")
 

@@ -8,10 +8,6 @@ from baseservertest import BaseServerTest, PORT
 
 
 class TestPasswordHash_Shutdown(BaseServerTest):
-    # def setUp(self):
-    #     restart_server(PORT)
-    #     self.seed_random(0)
-
     def test_shutdown_request_fresh(self):
         self.try_shutdown()
         self.verify_server_terminated()
